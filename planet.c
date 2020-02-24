@@ -122,10 +122,11 @@ void set_pixel(unsigned int x, unsigned int y)
   char ty = y/GTILE_SIZE;
   char px = x%GTILE_SIZE;
   char py = y%GTILE_SIZE;
+  char pattern;
 
   gsetpos(tx, ty);
   GCOL = 0x1F;
-  char pattern = GNAM;
+  pattern = GNAM;
   if (pattern == ' ')
   {
     GNAM = pattern = free_pattern++;
@@ -150,27 +151,29 @@ void set_pixel(unsigned int x, unsigned int y)
 
 void draw_planet(Planet *planet)
 {
-  free_pattern = 128;
   int r = planet->size;
   int x, y;
-  int f = 1-r;
+  int f = 2-r;
   int dfx = 0;
   int dfy = -2*r;
+
+  free_pattern = 128;
+
   x = 0;
   y = r-1;
-  while (y >= x)
+  while (y>=x)
   {
-    set_pixel(CENTER_X+x-1, CENTER_Y+y-1);
-    set_pixel(CENTER_X+x-1, CENTER_Y-y);
-    set_pixel(CENTER_X-x,   CENTER_Y+y-1);
-    set_pixel(CENTER_X-x,   CENTER_Y-y);
-    set_pixel(CENTER_X+y-1, CENTER_Y+x-1);
-    set_pixel(CENTER_X+y-1, CENTER_Y-x);
-    set_pixel(CENTER_X-y,   CENTER_Y+x-1);
-    set_pixel(CENTER_X-y,   CENTER_Y-x);
-
-    if (f >= 0)
+    for (int i=0; i<=y; i++)
     {
+      set_pixel(CENTER_X+x, CENTER_Y+i);
+    }
+
+    if (f>=0)
+    {
+      for (int i=0; i<=x; i++)
+      {
+        set_pixel(CENTER_X+y, CENTER_Y+i);
+      }
       y--;
       dfy += 2;
       f += dfy;
@@ -184,13 +187,13 @@ void draw_planet(Planet *planet)
 
 void make_planet(unsigned int seed)
 {
+  Planet planet;
+
   clear_panet_view();
   srand(seed);
-  Planet planet =
-  {
-    .id   = seed,
-    .size = 1+rand()%MAX_SIZE
-  };
+
+  planet.id   = seed;
+  planet.size = 1+rand()%MAX_SIZE;
   generate_name(&planet);
 
   printf("Planet %u\n", planet.id);
@@ -202,6 +205,9 @@ void make_planet(unsigned int seed)
 
 int main()
 {
+  char key;
+  unsigned int seed;
+
   set_graphics_mode();
   load_palettes();
 
@@ -209,8 +215,7 @@ int main()
   {
     printf("\nN: new / Q: quit\n");
 
-    char key;
-    unsigned int seed = rand();
+    seed = rand();
     while(!(key = getkey()))
     {
       seed++;
