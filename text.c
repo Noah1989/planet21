@@ -22,7 +22,7 @@ char read(unsigned char line, unsigned char column) {
   return GNAM;
 }
 
-#if SDCC >= 370
+#if __SDCC_VERSION_MAJOR >= 3 && __SDCC_VERSION_MINOR >= 7
 int putchar(int c)
 #else
 void putchar(char c)
@@ -75,7 +75,7 @@ void putchar(char c)
     column = TEXT_LEFT;
   }
 
-#if SDCC >= 370
+#if __SDCC_VERSION_MAJOR >= 3 && __SDCC_VERSION_MINOR >= 7
   return c;
 #endif
 }
