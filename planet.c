@@ -17,11 +17,11 @@ const union
     unsigned char scrollx_l : 8;
     unsigned char scrolly_l : 8;
     unsigned char scrollx_u : 2;
-    bool zoomx     : 1;
-    bool           : 1;
+    bool zoomx              : 1;
+    bool                    : 1;
     unsigned char scrolly_u : 2;
-    bool zoomy     : 1;
-    bool textmode  : 1;
+    bool zoomy              : 1;
+    bool textmode           : 1;
   } values;
   unsigned char bytes[3];
 } settings =
@@ -119,8 +119,10 @@ void clear_panet_view()
 }
 
 unsigned char free_pattern;
-void set_pixel(unsigned int x, unsigned int y)
+void set_pixel(signed char rx, signed char ry)
 {
+  int x = CENTER_X + rx;
+  int y = CENTER_Y + ry;
   unsigned char tx = x/GTILE_SIZE;
   unsigned char ty = y/GTILE_SIZE;
   unsigned char px = x%GTILE_SIZE;
@@ -153,14 +155,24 @@ void set_pixel(unsigned int x, unsigned int y)
 
 }
 
+void render(unsigned char x, unsigned char y, unsigned char z)
+{
+  if (z==0)
+  {
+    set_pixel( x,    y);
+    //set_pixel(-x-1,  y);
+    //set_pixel( x,   -y-1);
+    //set_pixel(-x-1, -y-1);
+  }
+}
+
 void draw_planet(Planet *planet)
 {
-  int r = planet->size;
-  int x, y;
-  int f = 2-r;
-  int dfx = 0;
-  int dfy = -2*r;
-  int i;
+  unsigned char r = planet->size;
+  unsigned char x, y, i;
+  unsigned char dfx = 0;
+  unsigned char dfy = 2*r;
+  signed   char f   = 2-r;
 
   free_pattern = 128;
 
@@ -168,20 +180,29 @@ void draw_planet(Planet *planet)
   y = r-1;
   while (y>=x)
   {
-    for (i=0; i<=y; i++)
+    i=y;
+    do
     {
-      set_pixel(CENTER_X+x, CENTER_Y+i);
+      render(x, i, 0);
     }
+    while (i--);
 
     if (f>=0)
     {
-      for (i=0; i<=x; i++)
+      i=x;
+      do
       {
-        set_pixel(CENTER_X+y, CENTER_Y+i);
+        render(y, i, 0);
+      }
+      while (i--);
+
+      if (y==0)
+      {
+        break;
       }
       y--;
-      dfy += 2;
-      f += dfy;
+      dfy -= 2;
+      f -= dfy;
     }
     x++;
     dfx += 2;
