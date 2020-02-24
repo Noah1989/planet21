@@ -8,5 +8,5 @@
 extern const Rgbi RGBI_TEXT_BG;
 extern const Rgbi RGBI_TEXT_FG;
 
-extern char TEXT_PALETTE_TOP;
-extern char TEXT_PALETTE_BOT;
+extern unsigned char TEXT_PALETTE_TOP;
+extern unsigned char TEXT_PALETTE_BOT;

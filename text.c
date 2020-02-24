@@ -8,7 +8,7 @@
 const Rgbi RGBI_TEXT_BG = {{.r=0, .g=0, .b=0, .i=0}};
 const Rgbi RGBI_TEXT_FG = {{.r=1, .g=3, .b=0, .i=1}};
 
-void print(char line, char column, char c)
+void print(unsigned char line, unsigned char column, char c)
 {
   gsetpos(column, line*2);
   GCOL = TEXT_PALETTE_TOP;
@@ -17,15 +17,19 @@ void print(char line, char column, char c)
   GCOL = TEXT_PALETTE_BOT;
   GNAM = c;
 }
-char read(char line, char column) {
+char read(unsigned char line, unsigned char column) {
   gsetpos(column, line*2);
   return GNAM;
 }
 
+#if SDCC >= 370
 int putchar(int c)
+#else
+void putchar(char c)
+#endif
 {
-  static char column = TEXT_LEFT;
-  static char line = TEXT_TOP;
+  static unsigned char column = TEXT_LEFT;
+  static unsigned char line = TEXT_TOP;
 
   switch (c)
   {
@@ -71,5 +75,7 @@ int putchar(int c)
     column = TEXT_LEFT;
   }
 
+#if SDCC >= 370
   return c;
+#endif
 }

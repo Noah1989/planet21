@@ -10,7 +10,7 @@ void gaddr(size_t addr)
   GADDR_H = UPPER(addr);
 }
 
-void gsetpos(char x, char y)
+void gsetpos(unsigned char x, unsigned char y)
 {
   gaddr((y)*GTILE_COLS + (x));
 }

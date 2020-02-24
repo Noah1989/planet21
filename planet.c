@@ -8,22 +8,22 @@
 
 #include "text.h"
 
-#define SCROLLX -2
-#define SCROLLY -2
+#define SCROLLX ((int)-2)
+#define SCROLLY ((int)-2)
 const union
 {
   struct
   {
-    char scrollx_l : 8;
-    char scrolly_l : 8;
-    char scrollx_u : 2;
+    unsigned char scrollx_l : 8;
+    unsigned char scrolly_l : 8;
+    unsigned char scrollx_u : 2;
     bool zoomx     : 1;
     bool           : 1;
-    char scrolly_u : 2;
+    unsigned char scrolly_u : 2;
     bool zoomy     : 1;
     bool textmode  : 1;
   } values;
-  char bytes[3];
+  unsigned char bytes[3];
 } settings =
 {
   {
@@ -50,8 +50,8 @@ typedef enum
 } Palette;
 void load_palettes()
 {
-  char text_bg = RGBI_TEXT_BG.rgbi;
-  char text_fg = RGBI_TEXT_FG.rgbi;
+  unsigned char text_bg = RGBI_TEXT_BG.rgbi;
+  unsigned char text_fg = RGBI_TEXT_FG.rgbi;
   gaddr(PAL_TEXT_TOP * GPAL_SIZE);
   GPAL_INC = text_bg;
   GPAL_INC = text_fg;
@@ -63,21 +63,23 @@ void load_palettes()
   GPAL_INC = text_fg;
   GPAL_INC = text_fg;
 }
-char TEXT_PALETTE_TOP = PAL_TEXT_TOP;
-char TEXT_PALETTE_BOT = PAL_TEXT_BOT;
+unsigned char TEXT_PALETTE_TOP = PAL_TEXT_TOP;
+unsigned char TEXT_PALETTE_BOT = PAL_TEXT_BOT;
 
 typedef struct
 {
   unsigned int id;
   char name[10];
-  char size;
+  unsigned char size;
 } Planet;
 
 void generate_name(Planet *planet)
 {
-  char name_len = 2+rand()%8;
+  unsigned char name_len = 2+rand()%8;
   bool vowel = rand()%2;
-  for (char i = 0; i < name_len; i++)
+  unsigned char i;
+
+  for (i = 0; i < name_len; i++)
   {
     if (vowel)
     {
@@ -104,9 +106,10 @@ void generate_name(Planet *planet)
 #define CENTER_Y  (CENTER_Y_TILE*GTILE_SIZE)
 void clear_panet_view()
 {
-  for (char y = CENTER_Y_TILE-MAX_SIZE_TILES; y < CENTER_Y_TILE+MAX_SIZE_TILES; y++)
+  unsigned char x, y;
+  for (y = CENTER_Y_TILE-MAX_SIZE_TILES; y < CENTER_Y_TILE+MAX_SIZE_TILES; y++)
   {
-    for (char x = CENTER_X_TILE-MAX_SIZE_TILES; x < CENTER_X_TILE+MAX_SIZE_TILES; x++)
+    for (x = CENTER_X_TILE-MAX_SIZE_TILES; x < CENTER_X_TILE+MAX_SIZE_TILES; x++)
     {
       gsetpos(x, y);
       GNAM = ' ';
@@ -115,14 +118,15 @@ void clear_panet_view()
   }
 }
 
-char free_pattern;
+unsigned char free_pattern;
 void set_pixel(unsigned int x, unsigned int y)
 {
-  char tx = x/GTILE_SIZE;
-  char ty = y/GTILE_SIZE;
-  char px = x%GTILE_SIZE;
-  char py = y%GTILE_SIZE;
-  char pattern;
+  unsigned char tx = x/GTILE_SIZE;
+  unsigned char ty = y/GTILE_SIZE;
+  unsigned char px = x%GTILE_SIZE;
+  unsigned char py = y%GTILE_SIZE;
+  unsigned char pattern;
+  unsigned char i;
 
   gsetpos(tx, ty);
   GCOL = 0x1F;
@@ -131,7 +135,7 @@ void set_pixel(unsigned int x, unsigned int y)
   {
     GNAM = pattern = free_pattern++;
     gaddr(pattern*GPAT_SIZE);
-    for (int i = 0; i < GPAT_SIZE; i++) {
+    for (i = 0; i < GPAT_SIZE; i++) {
       GPAT_INC = 0;
     }
   }
@@ -156,6 +160,7 @@ void draw_planet(Planet *planet)
   int f = 2-r;
   int dfx = 0;
   int dfy = -2*r;
+  int i;
 
   free_pattern = 128;
 
@@ -163,14 +168,14 @@ void draw_planet(Planet *planet)
   y = r-1;
   while (y>=x)
   {
-    for (int i=0; i<=y; i++)
+    for (i=0; i<=y; i++)
     {
       set_pixel(CENTER_X+x, CENTER_Y+i);
     }
 
     if (f>=0)
     {
-      for (int i=0; i<=x; i++)
+      for (i=0; i<=x; i++)
       {
         set_pixel(CENTER_X+y, CENTER_Y+i);
       }
@@ -205,7 +210,7 @@ void make_planet(unsigned int seed)
 
 int main()
 {
-  char key;
+  unsigned char key;
   unsigned int seed;
 
   set_graphics_mode();

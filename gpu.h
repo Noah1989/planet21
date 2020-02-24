@@ -22,16 +22,16 @@ __port __at 0xBF GPAL_INC;
 #define GTILE_COUNT (GTILE_COLS * GTILE_ROWS)
 
 void gaddr(size_t addr);
-void gsetpos(char x, char y);
+void gsetpos(unsigned char x, unsigned char y);
 
 typedef union
 {
   struct
   {
-    char i: 2;
-    char b: 2;
-    char g: 2;
-    char r: 2;
+    unsigned char i: 2;
+    unsigned char b: 2;
+    unsigned char g: 2;
+    unsigned char r: 2;
   } comp;
-  char rgbi;
+  unsigned char rgbi;
 } Rgbi;

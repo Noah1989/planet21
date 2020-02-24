@@ -1,4 +1,4 @@
-extern char getkey();
+extern unsigned char getkey();
 
 #define KEY_ESC 0x76
 #define KEY_F1  0x05
