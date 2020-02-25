@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "util.h"
 #include "gpu.h"
@@ -46,7 +47,10 @@ void set_graphics_mode()
 typedef enum
 {
   PAL_TEXT_TOP,
-  PAL_TEXT_BOT
+  PAL_TEXT_BOT,
+  PAL_SPACE,
+  PAL_OUTER,
+  PAL_INNER
 } Palette;
 void load_palettes()
 {
@@ -73,29 +77,33 @@ typedef struct
   unsigned char size;
 } Planet;
 
+const char *vowels = "aeiouy";
 void generate_name(Planet *planet)
 {
-  unsigned char name_len = 2+rand()%8;
-  bool vowel = rand()%2;
+  unsigned char name_len = 2+RANDOM(8);
+  bool vowel = RANDOM(2);
   unsigned char i;
+  char c;
 
   for (i = 0; i < name_len; i++)
   {
     if (vowel)
     {
-      planet->name[i] = "aeiouy"[rand()%6];
+      c = vowels[RANDOM(6)];
+      vowel = false;
     }
     else
     {
-      planet->name[i] = 'a' + rand()%26;
+      c = 'a' + RANDOM(26);
+      vowel = !strchr(vowels, c);
     }
     if (i==0)
     {
-      planet->name[i] += 'A'-'a';
+      c += 'A'-'a';
     }
-    vowel = !vowel;
+    planet->name[i] = c;
   }
-  planet->name[name_len] = 0;
+  planet->name[i] = 0;
 }
 
 #define MAX_SIZE_TILES 9
@@ -113,7 +121,7 @@ void clear_panet_view()
     {
       gsetpos(x, y);
       GNAM = ' ';
-      GCOL = 0;
+      GCOL = PAL_SPACE;
     }
   }
 }
@@ -121,8 +129,8 @@ void clear_panet_view()
 unsigned char free_pattern;
 void set_pixel(signed char rx, signed char ry)
 {
-  int x = CENTER_X + rx;
-  int y = CENTER_Y + ry;
+  unsigned int x = CENTER_X + rx;
+  unsigned int y = CENTER_Y + ry;
   unsigned char tx = x/GTILE_SIZE;
   unsigned char ty = y/GTILE_SIZE;
   unsigned char px = x%GTILE_SIZE;
@@ -155,21 +163,27 @@ void set_pixel(signed char rx, signed char ry)
 
 }
 
-void render(unsigned char x, unsigned char y, unsigned char z)
+void render_line(unsigned char x, unsigned char y)
 {
-  if (z==0)
+  do
   {
-    set_pixel( x,    y);
-    //set_pixel(-x-1,  y);
-    //set_pixel( x,   -y-1);
-    //set_pixel(-x-1, -y-1);
+    if(y%8==7)
+    {
+      gsetpos(((unsigned int)(CENTER_X+x)), 0);
+      y-=7;
+    }
+    else
+    {
+      set_pixel(x, y);
+    }
   }
+  while (y--);
 }
 
 void draw_planet(Planet *planet)
 {
   unsigned char r = planet->size;
-  unsigned char x, y, i;
+  unsigned char x, y;
   unsigned char dfx = 0;
   unsigned char dfy = 2*r;
   signed   char f   = 2-r;
@@ -180,21 +194,11 @@ void draw_planet(Planet *planet)
   y = r-1;
   while (y>=x)
   {
-    i=y;
-    do
-    {
-      render(x, i, 0);
-    }
-    while (i--);
+    render_line(x, y);
 
     if (f>=0)
     {
-      i=x;
-      do
-      {
-        render(y, i, 0);
-      }
-      while (i--);
+      render_line(y, x);
 
       if (y==0)
       {
@@ -219,7 +223,7 @@ void make_planet(unsigned int seed)
   srand(seed);
 
   planet.id   = seed;
-  planet.size = 1+rand()%MAX_SIZE;
+  planet.size = 1+RANDOM(MAX_SIZE);
   generate_name(&planet);
 
   printf("Planet %u\n", planet.id);
