@@ -48,9 +48,9 @@ typedef enum
 {
   PAL_TEXT_TOP,
   PAL_TEXT_BOT,
-  PAL_SPACE,
-  PAL_OUTER,
-  PAL_INNER
+  PAL_SPACE=0x1F,
+  PAL_INNER=0x2F,
+  PAL_OUTER=0x4F
 } Palette;
 void load_palettes()
 {
@@ -127,7 +127,7 @@ void clear_panet_view()
 }
 
 unsigned char free_pattern;
-void set_pixel(signed char rx, signed char ry)
+void setpixel(signed char rx, signed char ry)
 {
   unsigned int x = CENTER_X + rx;
   unsigned int y = CENTER_Y + ry;
@@ -139,13 +139,13 @@ void set_pixel(signed char rx, signed char ry)
   unsigned char i;
 
   gsetpos(tx, ty);
-  GCOL = 0x1F;
   pattern = GNAM;
   if (pattern == ' ')
   {
     GNAM = pattern = free_pattern++;
     gaddr(pattern*GPAT_SIZE);
-    for (i = 0; i < GPAT_SIZE; i++) {
+    for (i = 0; i < GPAT_SIZE; i++)
+    {
       GPAT_INC = 0;
     }
   }
@@ -160,24 +160,85 @@ void set_pixel(signed char rx, signed char ry)
   {
     GPAT |= 0x01;
   }
-
+}
+void setpixel8(unsigned char rx, unsigned char ry)
+{
+  setpixel(rx, ry);
+  setpixel(ry, rx);
+  setpixel(-rx-1, ry);
+  setpixel(-ry-1, rx);
+  setpixel(rx, -ry-1);
+  setpixel(ry, -rx-1);
+  setpixel(-rx-1, -ry-1);
+  setpixel(-ry-1, -rx-1);
 }
 
-void render_line(unsigned char x, unsigned char y)
+Palette getpal(unsigned char rx, unsigned char ry)
 {
+  unsigned char rtx = rx/GTILE_SIZE;
+  unsigned char rty = ry/GTILE_SIZE;
+  gsetpos(CENTER_X_TILE+rtx, CENTER_Y_TILE+rty);
+  return GCOL;
+}
+
+void setpal8(unsigned char rx, unsigned char ry, Palette pal)
+{
+  unsigned char rtx = rx/GTILE_SIZE;
+  unsigned char rty = ry/GTILE_SIZE;
+  gsetpos(CENTER_X_TILE+rtx, CENTER_Y_TILE+rty);
+  GCOL = pal;
+  gsetpos(CENTER_X_TILE+rty, CENTER_Y_TILE+rtx);
+  GCOL = pal;
+  gsetpos(CENTER_X_TILE-rtx-1, CENTER_Y_TILE+rty);
+  GCOL = pal;
+  gsetpos(CENTER_X_TILE-rty-1, CENTER_Y_TILE+rtx);
+  GCOL = pal;
+  gsetpos(CENTER_X_TILE+rtx, CENTER_Y_TILE-rty-1);
+  GCOL = pal;
+  gsetpos(CENTER_X_TILE+rty, CENTER_Y_TILE-rtx-1);
+  GCOL = pal;
+  gsetpos(CENTER_X_TILE-rtx-1, CENTER_Y_TILE-rty-1);
+  GCOL = pal;
+  gsetpos(CENTER_X_TILE-rty-1, CENTER_Y_TILE-rtx-1);
+  GCOL = pal;
+}
+
+void render_line(unsigned char rx, unsigned char ry)
+{
+  Palette pal;
+  unsigned char ix, iy;
+
   do
   {
-    if(y%8==7)
+    pal = getpal(rx, ry);
+    if (ry%GTILE_SIZE == 7)
     {
-      gsetpos(((unsigned int)(CENTER_X+x)), 0);
-      y-=7;
+      if (pal != PAL_OUTER)
+      {
+        setpal8(rx,ry, PAL_INNER);
+        ry-=7;
+        continue;
+      }
     }
-    else
+
+    if (pal != PAL_OUTER)
     {
-      set_pixel(x, y);
+      setpal8(rx, ry, PAL_OUTER);
+      for (ix = rx&0xF8; ix < rx; ix++)
+      {
+        for (iy = (ry&0xF8)+GTILE_SIZE-1; iy >= (ry&0xF8) && iy >= ix; iy--)
+        {
+          setpixel8(ix, iy);
+          if (iy == 0)
+          {
+            break;
+          }
+        }
+      }
     }
+    setpixel8(rx, ry);
   }
-  while (y--);
+  while (rx < ry--);
 }
 
 void draw_planet(Planet *planet)
@@ -198,8 +259,6 @@ void draw_planet(Planet *planet)
 
     if (f>=0)
     {
-      render_line(y, x);
-
       if (y==0)
       {
         break;
