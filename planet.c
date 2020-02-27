@@ -48,9 +48,12 @@ typedef enum
 {
   PAL_TEXT_TOP,
   PAL_TEXT_BOT,
-  PAL_SPACE=0x1F,
-  PAL_INNER=0x2F,
-  PAL_OUTER=0x4F
+  PAL_SPACE = 0x8F,
+  PAL_INNER = 0x2F,
+  PAL_OUTER = 0x4F,
+  PAL_LAND  = 0x6F,
+  PAL_SEA   = 0x1F,
+  PAL_SHORE = 0x9E
 } Palette;
 void load_palettes()
 {
@@ -135,22 +138,22 @@ void setpixel(signed char rx, signed char ry)
   unsigned char ty = y/GTILE_SIZE;
   unsigned char px = x%GTILE_SIZE;
   unsigned char py = y%GTILE_SIZE;
-  unsigned char pattern;
+  unsigned char pat;
   unsigned char i;
 
   gsetpos(tx, ty);
-  pattern = GNAM;
-  if (pattern == ' ')
+  pat = GNAM;
+  if (pat == ' ')
   {
-    GNAM = pattern = free_pattern++;
-    gaddr(pattern*GPAT_SIZE);
+    GNAM = pat = free_pattern--;
+    gaddr(pat*GPAT_SIZE);
     for (i = 0; i < GPAT_SIZE; i++)
     {
       GPAT_INC = 0;
     }
   }
 
-  gaddr(pattern*GPAT_SIZE + (py>>1)*GTILE_SIZE + px);
+  gaddr(pat*GPAT_SIZE + (py>>1)*GTILE_SIZE + px);
 
   if (py&0x01)
   {
@@ -203,30 +206,26 @@ void setpal8(unsigned char rx, unsigned char ry, Palette pal)
   GCOL = pal;
 }
 
-void render_line(unsigned char rx, unsigned char ry)
+void render_line(unsigned char x, unsigned char y)
 {
-  Palette pal;
   unsigned char ix, iy;
+  Palette pal;
 
   do
   {
-    pal = getpal(rx, ry);
-    if (ry%GTILE_SIZE == 7)
-    {
-      if (pal != PAL_OUTER)
-      {
-        setpal8(rx,ry, PAL_INNER);
-        ry-=7;
-        continue;
-      }
-    }
-
+    pal = getpal(x, y);
     if (pal != PAL_OUTER)
     {
-      setpal8(rx, ry, PAL_OUTER);
-      for (ix = rx&0xF8; ix < rx; ix++)
+      if (y%GTILE_SIZE == 7)
       {
-        for (iy = (ry&0xF8)+GTILE_SIZE-1; iy >= (ry&0xF8) && iy >= ix; iy--)
+        setpal8(x,y, PAL_INNER);        
+        y-=7;
+        continue;
+      }
+      setpal8(x, y, PAL_OUTER);
+      for (ix = x&0xF8; ix < x; ix++)
+      {
+        for (iy = (y&0xF8)+GTILE_SIZE-1; iy >= (y&0xF8) && iy >= ix; iy--)
         {
           setpixel8(ix, iy);
           if (iy == 0)
@@ -236,24 +235,22 @@ void render_line(unsigned char rx, unsigned char ry)
         }
       }
     }
-    setpixel8(rx, ry);
-  }
-  while (rx < ry--);
+    setpixel8(x, y);
+  } while (x , y--);
 }
 
 void draw_planet(Planet *planet)
 {
-  unsigned char r = planet->size;
-  unsigned char x, y;
+  unsigned char r   = planet->size;
   unsigned char dfx = 0;
   unsigned char dfy = 2*r;
   signed   char f   = 2-r;
+  unsigned char x   = 0;
+  unsigned char y   = r-1;
 
-  free_pattern = 128;
+  free_pattern = 255;
 
-  x = 0;
-  y = r-1;
-  while (y>=x)
+  while (y >= x)
   {
     render_line(x, y);
 
@@ -271,6 +268,8 @@ void draw_planet(Planet *planet)
     dfx += 2;
     f += dfx+1;
   }
+
+  printf("\n\%d free\n", free_pattern-127);
 
 }
 
