@@ -46,32 +46,41 @@ void set_graphics_mode()
 
 typedef enum
 {
+  MAT_SPACE,
+  MAT_LAND,
+  MAT_SEA,
+  NUM_MATS
+} Material;
+Color mat_colors[NUM_MATS] =
+{
+  {{.r=0, .g=0, .b=0, .i=0}},
+  {{.r=3, .g=2, .b=1, .i=1}},
+  {{.r=0, .g=1, .b=3, .i=1}}
+};
+typedef enum
+{
+  PAL_SPACE = MAT_SPACE,
+  PAL_LAND  = MAT_LAND,
+  PAL_SEA   = MAT_SEA,
+  PAL_FREE  = NUM_MATS,
+  PAL_MIXED,
   PAL_TEXT_TOP,
   PAL_TEXT_BOT,
-  PAL_SPACE = 0x8F,
-  PAL_INNER = 0x2F,
-  PAL_OUTER = 0x4F,
-  PAL_LAND  = 0x6F,
-  PAL_SEA   = 0x1F,
-  PAL_SHORE = 0x9E
+  NUM_PALS
 } Palette;
-void load_palettes()
+
+void load_materials()
 {
-  unsigned char text_bg = RGBI_TEXT_BG.rgbi;
-  unsigned char text_fg = RGBI_TEXT_FG.rgbi;
-  gaddr(PAL_TEXT_TOP * GPAL_SIZE);
-  GPAL_INC = text_bg;
-  GPAL_INC = text_fg;
-  GPAL_INC = text_bg;
-  GPAL_INC = text_fg;
-  gaddr(PAL_TEXT_BOT * GPAL_SIZE);
-  GPAL_INC = text_bg;
-  GPAL_INC = text_bg;
-  GPAL_INC = text_fg;
-  GPAL_INC = text_fg;
+  unsigned char rgbi;
+  for (Material mat = MAT_SPACE; mat < NUM_MATS; mat++)
+  {
+    rgbi = mat_colors[mat].rgbi;
+    gaddr(mat*GPAL_SIZE);
+    GPAL = rgbi;
+    gaddr(PAL_MIXED*GPAL_SIZE + mat);
+    GPAL = rgbi+1;
+  }
 }
-unsigned char TEXT_PALETTE_TOP = PAL_TEXT_TOP;
-unsigned char TEXT_PALETTE_BOT = PAL_TEXT_BOT;
 
 typedef struct
 {
@@ -124,13 +133,13 @@ void clear_panet_view()
     {
       gsetpos(x, y);
       GNAM = ' ';
-      GCOL = PAL_SPACE;
+      GCOL = PAL_FREE;
     }
   }
 }
 
 unsigned char free_pattern;
-void setpixel(signed char rx, signed char ry)
+void setpixel(signed char rx, signed char ry, Material mat)
 {
   unsigned int x = CENTER_X + rx;
   unsigned int y = CENTER_Y + ry;
@@ -138,18 +147,35 @@ void setpixel(signed char rx, signed char ry)
   unsigned char ty = y/GTILE_SIZE;
   unsigned char px = x%GTILE_SIZE;
   unsigned char py = y%GTILE_SIZE;
+  unsigned char pal;
   unsigned char pat;
+  unsigned char old;
   unsigned char i;
 
   gsetpos(tx, ty);
+  pal = GCOL;
   pat = GNAM;
-  if (pat == ' ')
+
+  if (pal == mat)
   {
+    return;
+  }
+
+  if (pal == PAL_FREE)
+  {
+    GCOL = mat;
+    return;
+  }
+
+  if (pal != PAL_MIXED)
+  {
+    old = GCOL;
+    GCOL = PAL_MIXED;
     GNAM = pat = free_pattern--;
     gaddr(pat*GPAT_SIZE);
     for (i = 0; i < GPAT_SIZE; i++)
     {
-      GPAT_INC = 0;
+      GPAT_INC = (old << 4) | old;
     }
   }
 
@@ -157,86 +183,56 @@ void setpixel(signed char rx, signed char ry)
 
   if (py&0x01)
   {
-    GPAT |= 0x10;
+    GPAT = GPAT&0x0F | (mat << 4);
   }
   else
   {
-    GPAT |= 0x01;
+    GPAT = GPAT&0xF0 | mat;
   }
 }
-void setpixel8(unsigned char rx, unsigned char ry)
+void setpixel8(unsigned char rx, unsigned char ry, Material mat)
 {
-  setpixel(rx, ry);
-  setpixel(ry, rx);
-  setpixel(-rx-1, ry);
-  setpixel(-ry-1, rx);
-  setpixel(rx, -ry-1);
-  setpixel(ry, -rx-1);
-  setpixel(-rx-1, -ry-1);
-  setpixel(-ry-1, -rx-1);
-}
-
-Palette getpal(unsigned char rx, unsigned char ry)
-{
-  unsigned char rtx = rx/GTILE_SIZE;
-  unsigned char rty = ry/GTILE_SIZE;
-  gsetpos(CENTER_X_TILE+rtx, CENTER_Y_TILE+rty);
-  return GCOL;
-}
-
-void setpal8(unsigned char rx, unsigned char ry, Palette pal)
-{
-  unsigned char rtx = rx/GTILE_SIZE;
-  unsigned char rty = ry/GTILE_SIZE;
-  gsetpos(CENTER_X_TILE+rtx, CENTER_Y_TILE+rty);
-  GCOL = pal;
-  gsetpos(CENTER_X_TILE+rty, CENTER_Y_TILE+rtx);
-  GCOL = pal;
-  gsetpos(CENTER_X_TILE-rtx-1, CENTER_Y_TILE+rty);
-  GCOL = pal;
-  gsetpos(CENTER_X_TILE-rty-1, CENTER_Y_TILE+rtx);
-  GCOL = pal;
-  gsetpos(CENTER_X_TILE+rtx, CENTER_Y_TILE-rty-1);
-  GCOL = pal;
-  gsetpos(CENTER_X_TILE+rty, CENTER_Y_TILE-rtx-1);
-  GCOL = pal;
-  gsetpos(CENTER_X_TILE-rtx-1, CENTER_Y_TILE-rty-1);
-  GCOL = pal;
-  gsetpos(CENTER_X_TILE-rty-1, CENTER_Y_TILE-rtx-1);
-  GCOL = pal;
+  setpixel( rx  ,  ry  , mat);
+  setpixel( ry  ,  rx  , mat);
+  setpixel(-rx-1,  ry  , mat);
+  setpixel(-ry-1,  rx  , mat);
+  setpixel( rx  , -ry-1, mat);
+  setpixel( ry  , -rx-1, mat);
+  setpixel(-rx-1, -ry-1, mat);
+  setpixel(-ry-1, -rx-1, mat);
 }
 
 void render_line(unsigned char x, unsigned char y)
 {
-  unsigned char ix, iy;
-  Palette pal;
+  unsigned char s, sx, sy;
+
+  s = GTILE_SIZE-(y%GTILE_SIZE);
+  while (--s)
+  {
+    setpixel8(x, y+s, MAT_SPACE);
+  }
+
+  if (x+1 >= y)
+  {
+    sx = s = GTILE_SIZE-(x%GTILE_SIZE);
+    while (--sx)
+    {
+      sy = s;
+      while (--sy)
+      {
+        setpixel8(x+sx, x+sy, MAT_SPACE);
+      }
+    }
+  }
 
   do
   {
-    pal = getpal(x, y);
-    if (pal != PAL_OUTER)
-    {
-      if (y%GTILE_SIZE == 7)
-      {
-        setpal8(x,y, PAL_INNER);        
-        y-=7;
-        continue;
-      }
-      setpal8(x, y, PAL_OUTER);
-      for (ix = x&0xF8; ix < x; ix++)
-      {
-        for (iy = (y&0xF8)+GTILE_SIZE-1; iy >= (y&0xF8) && iy >= ix; iy--)
-        {
-          setpixel8(ix, iy);
-          if (iy == 0)
-          {
-            break;
-          }
-        }
-      }
-    }
-    setpixel8(x, y);
-  } while (x , y--);
+    if(x+y>42)
+    setpixel8(x, y, MAT_LAND);
+    else
+    setpixel8(x, y, MAT_SEA);
+  } while (y--);
+
 }
 
 void draw_planet(Planet *planet)
@@ -291,13 +287,20 @@ void make_planet(unsigned int seed)
   draw_planet(&planet);
 }
 
+
+unsigned char TEXT_PALETTE_TOP = PAL_TEXT_TOP;
+unsigned char TEXT_PALETTE_BOT = PAL_TEXT_BOT;
+Color text_bg  = {{.r=0, .g=0, .b=0, .i=0}};
+Color text_fg  = {{.r=1, .g=3, .b=0, .i=1}};
+
 int main()
 {
   unsigned char key;
   unsigned int seed;
 
   set_graphics_mode();
-  load_palettes();
+  load_text_palettes(&text_bg, &text_fg);
+  load_materials();
 
   while (true)
   {

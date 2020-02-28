@@ -5,8 +5,19 @@
 
 #include "text.h"
 
-const Rgbi RGBI_TEXT_BG = {{.r=0, .g=0, .b=0, .i=0}};
-const Rgbi RGBI_TEXT_FG = {{.r=1, .g=3, .b=0, .i=1}};
+void load_text_palettes(Color *bg, Color *fg)
+{
+  gaddr(TEXT_PALETTE_TOP * GPAL_SIZE);
+  GPAL_INC = bg->rgbi;
+  GPAL_INC = fg->rgbi;
+  GPAL_INC = bg->rgbi;
+  GPAL_INC = fg->rgbi;
+  gaddr(TEXT_PALETTE_BOT * GPAL_SIZE);
+  GPAL_INC = bg->rgbi;
+  GPAL_INC = bg->rgbi;
+  GPAL_INC = fg->rgbi;
+  GPAL_INC = fg->rgbi;
+}
 
 void print(unsigned char line, unsigned char column, char c)
 {

@@ -5,8 +5,7 @@
 #define TEXT_RIGHT  (TEXT_LEFT + TEXT_WIDTH  - 1)
 #define TEXT_BOTTOM (TEXT_TOP  + TEXT_HEIGHT - 1)
 
-extern const Rgbi RGBI_TEXT_BG;
-extern const Rgbi RGBI_TEXT_FG;
-
 extern unsigned char TEXT_PALETTE_TOP;
 extern unsigned char TEXT_PALETTE_BOT;
+
+void load_text_palettes(Color *bg, Color *fg);

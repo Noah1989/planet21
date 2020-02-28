@@ -34,4 +34,4 @@ typedef union
     unsigned char r: 2;
   } comp;
   unsigned char rgbi;
-} Rgbi;
+} Color;
