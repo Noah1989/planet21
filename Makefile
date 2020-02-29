@@ -1,6 +1,6 @@
 all: planet.ihx
 
-objects = crt21.rel gpu.rel text.rel planet.rel
+objects = crt21.rel gpu.rel text.rel noise.rel planet.rel
 
 planet.ihx: $(objects)
 	sdcc --Werror -mz80 --code-loc 0x8000 --data-loc 0xF000 -o $@ --no-std-crt0 $(objects)

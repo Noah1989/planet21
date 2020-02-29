@@ -8,6 +8,7 @@
 #include "keys.h"
 
 #include "text.h"
+#include "noise.h"
 
 #define SCROLLX ((int)-2)
 #define SCROLLY ((int)-2)
@@ -150,7 +151,7 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   unsigned char mat, pal, pat, old;
   unsigned char i;
 
-  mat = rz == -1 ? MAT_SPACE : (rx+ry+rz)/3&0x10 ? MAT_SEA : MAT_LAND;
+  mat = rz == -1 ? MAT_SPACE : noise(rx/32.0,ry/32.0,rz/32.0)<0.0 ? MAT_SEA : MAT_LAND;
 
   gsetpos(tx, ty);
   pal = GCOL;
