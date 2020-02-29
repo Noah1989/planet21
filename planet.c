@@ -54,8 +54,8 @@ typedef enum
 Color mat_colors[NUM_MATS] =
 {
   {{.r=0, .g=0, .b=0, .i=0}},
-  {{.r=3, .g=2, .b=1, .i=1}},
-  {{.r=0, .g=1, .b=3, .i=1}}
+  {{.r=3, .g=2, .b=1, .i=2}},
+  {{.r=0, .g=1, .b=3, .i=2}}
 };
 typedef enum
 {
@@ -139,7 +139,7 @@ void clear_panet_view()
 }
 
 unsigned char free_pattern;
-void setpixel(signed char rx, signed char ry, Material mat)
+void setpixel(signed char rx, signed char ry, signed char rz)
 {
   unsigned int x = CENTER_X + rx;
   unsigned int y = CENTER_Y + ry;
@@ -147,10 +147,10 @@ void setpixel(signed char rx, signed char ry, Material mat)
   unsigned char ty = y/GTILE_SIZE;
   unsigned char px = x%GTILE_SIZE;
   unsigned char py = y%GTILE_SIZE;
-  unsigned char pal;
-  unsigned char pat;
-  unsigned char old;
+  unsigned char mat, pal, pat, old;
   unsigned char i;
+
+  mat = rz == -1 ? MAT_SPACE : (rx+ry+rz)/3&0x10 ? MAT_SEA : MAT_LAND;
 
   gsetpos(tx, ty);
   pal = GCOL;
@@ -190,28 +190,35 @@ void setpixel(signed char rx, signed char ry, Material mat)
     GPAT = GPAT&0xF0 | mat;
   }
 }
-void setpixel8(unsigned char rx, unsigned char ry, Material mat)
+void setpixel8(signed char x, signed char y, signed char z)
 {
-  setpixel( rx  ,  ry  , mat);
-  setpixel( ry  ,  rx  , mat);
-  setpixel(-rx-1,  ry  , mat);
-  setpixel(-ry-1,  rx  , mat);
-  setpixel( rx  , -ry-1, mat);
-  setpixel( ry  , -rx-1, mat);
-  setpixel(-rx-1, -ry-1, mat);
-  setpixel(-ry-1, -rx-1, mat);
+  setpixel( x  ,  y  , z);
+  setpixel( y  ,  x  , z);
+  setpixel(-x-1,  y  , z);
+  setpixel(-y-1,  x  , z);
+  setpixel( x  , -y-1, z);
+  setpixel( y  , -x-1, z);
+  setpixel(-x-1, -y-1, z);
+  setpixel(-y-1, -x-1, z);
 }
 
-void render_line(unsigned char x, unsigned char y)
+void render_line(unsigned char x, unsigned char y, signed int f)
 {
   unsigned char s, sx, sy;
 
+  unsigned char r = y+1;
+  unsigned char z   = 0;
+  unsigned char dfz = 0;
+  unsigned char dfy = 2*r;
+
+  /* fill outer space */
   s = GTILE_SIZE-(y%GTILE_SIZE);
   while (--s)
   {
-    setpixel8(x, y+s, MAT_SPACE);
+    setpixel8(x, y+s, -1);
   }
 
+  /* fill space in corners */
   if (x+1 >= y)
   {
     sx = s = GTILE_SIZE-(x%GTILE_SIZE);
@@ -220,19 +227,28 @@ void render_line(unsigned char x, unsigned char y)
       sy = s;
       while (--sy)
       {
-        setpixel8(x+sx, x+sy, MAT_SPACE);
+        setpixel8(x+sx, x+sy, -1);
       }
     }
   }
 
-  do
+  while (y >= x)
   {
-    if(x+y>42)
-    setpixel8(x, y, MAT_LAND);
-    else
-    setpixel8(x, y, MAT_SEA);
-  } while (y--);
-
+    while (f>=0)
+    {
+      setpixel8(x, y, z);
+      if (y==0)
+      {
+        return;
+      }
+      y--;
+      dfy -= 2;
+      f -= dfy;
+    }
+    z++;
+    dfz += 2;
+    f += dfz+1;
+  }
 }
 
 void draw_planet(Planet *planet)
@@ -240,7 +256,7 @@ void draw_planet(Planet *planet)
   unsigned char r   = planet->size;
   unsigned char dfx = 0;
   unsigned char dfy = 2*r;
-  signed   char f   = 2-r;
+  signed   int  f   = 2-r;
   unsigned char x   = 0;
   unsigned char y   = r-1;
 
@@ -248,7 +264,7 @@ void draw_planet(Planet *planet)
 
   while (y >= x)
   {
-    render_line(x, y);
+    render_line(x, y, f);
 
     if (f>=0)
     {
