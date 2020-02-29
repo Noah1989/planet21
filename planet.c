@@ -281,7 +281,7 @@ void draw_planet(Planet *planet)
     f += dfx+1;
   }
 
-  printf("\n\%d free\n", free_pattern-127);
+  printf("\n%d free\n", free_pattern-127);
 
 }
 
