@@ -23,53 +23,72 @@ const unsigned char permutation[256] =
 };
 #define p(x) permutation[(x&255)]
 
-float fade(float t)
+unsigned int flookup[257] =
 {
-  return t*t*t*(t*(t*6-15)+10);
+  0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 3, 4, 6, 7, 9, 10, 12, 14, 17, 19, 22,
+  25, 29, 32, 36, 40, 45, 49, 54, 60, 65, 71, 77, 84, 91, 98, 105, 113, 121,
+  130, 139, 148, 158, 167, 178, 188, 199, 211, 222, 234, 247, 259, 273, 286,
+  300, 314, 329, 344, 359, 374, 390, 407, 424, 441, 458, 476, 494, 512, 531,
+  550, 570, 589, 609, 630, 651, 672, 693, 715, 737, 759, 782, 805, 828, 851,
+  875, 899, 923, 948, 973, 998, 1023, 1049, 1074, 1100, 1127, 1153, 1180, 1207,
+  1234, 1261, 1289, 1316, 1344, 1372, 1400, 1429, 1457, 1486, 1515, 1543, 1572,
+  1602, 1631, 1660, 1690, 1719, 1749, 1778, 1808, 1838, 1868, 1898, 1928, 1958,
+  1988, 2018, 2048, 2077, 2107, 2137, 2167, 2197, 2227, 2257, 2287, 2317, 2346,
+  2376, 2405, 2435, 2464, 2493, 2523, 2552, 2580, 2609, 2638, 2666, 2695, 2723,
+  2751, 2779, 2806, 2834, 2861, 2888, 2915, 2942, 2968, 2995, 3021, 3046, 3072,
+  3097, 3122, 3147, 3172, 3196, 3220, 3244, 3267, 3290, 3313, 3336, 3358, 3380,
+  3402, 3423, 3444, 3465, 3486, 3506, 3525, 3545, 3564, 3583, 3601, 3619, 3637,
+  3654, 3672, 3688, 3705, 3721, 3736, 3751, 3766, 3781, 3795, 3809, 3822, 3836,
+  3848, 3861, 3873, 3884, 3896, 3907, 3917, 3928, 3937, 3947, 3956, 3965, 3974,
+  3982, 3990, 3997, 4004, 4011, 4018, 4024, 4030, 4035, 4041, 4046, 4050, 4055,
+  4059, 4063, 4066, 4070, 4073, 4076, 4078, 4081, 4083, 4085, 4086, 4088, 4089,
+  4091, 4092, 4092, 4093, 4094, 4094, 4095, 4095, 4095, 4095, 4095, 4095, 4095,
+  4095
+};
+
+unsigned int fade(unsigned int t)
+{
+  unsigned int t0 = flookup[ t>>8];
+  unsigned int t1 = flookup[(t>>8) + 1];
+  return t0 + ((t&255)*(t1-t0) >> 8);
 }
 
-float lerp(float t, float a, float b)
+long lerp(unsigned int t, long a, long b)
 {
-  return a + t*(b-a);
+  return a + (t*(b-a) >> 12);
 }
 
-float grad(unsigned char hash, float x, float y, float z)
+long grad(unsigned char hash, long x, long y, long z)
 {
   unsigned char h = hash & 15;
-  float u = h<8 ? x : y;
-  float v = h<4 ? y : h==12||h==14 ? x : z;
+  long u = h<8 ? x : y;
+  long v = h<4 ? y : h==12||h==14 ? x : z;
   return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
 }
-float noise(float x, float y, float z)
+
+#define N 0x10000
+long noise(long x, long y, long z)
 {
-  float fx = floorf(x);
-  float fy = floorf(y);
-  float fz = floorf(z);
-
-  signed char X = fx;
-  signed char Y = fy;
-  signed char Z = fz;
-  signed int A, B, AA, AB, BA, BB;
-
-  float u, v, w;
-
-  x -= fx;
-  y -= fy;
-  z -= fz;
-
+  unsigned char X = x>>16 & 255;
+  unsigned char Y = y>>16 & 255;
+  unsigned char Z = z>>16 & 255;
+  unsigned char A, B, AA, AB, BA, BB;
+  unsigned int u, v, w;
+  x &= N-1;
+  y &= N-1;
+  z &= N-1;
   u = fade(x);
   v = fade(y);
   w = fade(z);
-
-  A = p(X  )+Y; AA = p(A)+Z; AB = p(A+1)+Z;
-  B = p(X+1)+Y; BA = p(B)+Z, BB = p(B+1)+Z;
+  A = p(X  )+Y, AA = p(A)+Z, AB = p(A+1)+Z;
+  B = p(X+1)+Y, BA = p(B)+Z, BB = p(B+1)+Z;
 
   return lerp(w, lerp(v, lerp(u, grad(p(AA  ), x  , y  , z   ),
-                                 grad(p(BA  ), x-1, y  , z   )),
-                         lerp(u, grad(p(AB  ), x  , y-1, z   ),
-                                 grad(p(BB  ), x-1, y-1, z   ))),
-                 lerp(v, lerp(u, grad(p(AA+1), x  , y  , z-1 ),
-                                 grad(p(BA+1), x-1, y  , z-1 )),
-                         lerp(u, grad(p(AB+1), x  , y-1, z-1 ),
-                                 grad(p(BB+1), x-1, y-1, z-1 ))));
+                                 grad(p(BA  ), x-N, y  , z   )),
+                         lerp(u, grad(p(AB  ), x  , y-N, z   ),
+                                 grad(p(BB  ), x-N, y-N, z   ))),
+                 lerp(v, lerp(u, grad(p(AA+1), x  , y  , z-N ),
+                                 grad(p(BA+1), x-N, y  , z-N )),
+                         lerp(u, grad(p(AB+1), x  , y-N, z-N ),
+                                 grad(p(BB+1), x-N, y-N, z-N ))));
 }

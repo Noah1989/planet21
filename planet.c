@@ -89,9 +89,10 @@ typedef struct
   char name[10];
   unsigned char size;
 } Planet;
+Planet planet;
 
 const char *vowels = "aeiouy";
-void generate_name(Planet *planet)
+void generate_name()
 {
   unsigned char name_len = 2+RANDOM(8);
   bool vowel = RANDOM(2);
@@ -114,9 +115,9 @@ void generate_name(Planet *planet)
     {
       c += 'A'-'a';
     }
-    planet->name[i] = c;
+    planet.name[i] = c;
   }
-  planet->name[i] = 0;
+  planet.name[i] = 0;
 }
 
 #define MAX_SIZE_TILES 9
@@ -151,7 +152,7 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   unsigned char mat, pal, pat, old;
   unsigned char i;
 
-  mat = rz == -1 ? MAT_SPACE : noise(rx/32.0,ry/32.0,rz/32.0)<0.0 ? MAT_SEA : MAT_LAND;
+  mat = rz == -1 ? MAT_SPACE : noise(((long)planet.id<<16)+((long)rx<<10),(long)ry<<10,(long)rz<<10)<0 ? MAT_SEA : MAT_LAND;
 
   gsetpos(tx, ty);
   pal = GCOL;
@@ -252,9 +253,9 @@ void render_line(unsigned char x, unsigned char y, signed int f)
   }
 }
 
-void draw_planet(Planet *planet)
+void draw_planet()
 {
-  unsigned char r   = planet->size;
+  unsigned char r   = planet.size;
   unsigned char dfx = 0;
   unsigned char dfy = 2*r;
   signed   int  f   = 2-r;
@@ -288,20 +289,18 @@ void draw_planet(Planet *planet)
 
 void make_planet(unsigned int seed)
 {
-  Planet planet;
-
   clear_panet_view();
   srand(seed);
 
   planet.id   = seed;
   planet.size = 1+RANDOM(MAX_SIZE);
-  generate_name(&planet);
+  generate_name();
 
   printf("Planet %u\n", planet.id);
   printf("Name: %s\n", planet.name);
   printf("Size: %u\n", planet.size);
 
-  draw_planet(&planet);
+  draw_planet();
 }
 
 

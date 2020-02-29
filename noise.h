@@ -1,1 +1,1 @@
-float noise (float x, float y, float z);
+long noise (long x, long y, long z);
