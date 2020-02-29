@@ -152,7 +152,11 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   unsigned char mat, pal, pat, old;
   unsigned char i;
 
-  mat = rz == -1 ? MAT_SPACE : noise(((long)planet.id<<16)+((long)rx<<10),(long)ry<<10,(long)rz<<10)<0 ? MAT_SEA : MAT_LAND;
+  mat = rz == -1 ? MAT_SPACE : noise(
+    ((long)planet.id<<16)+(rx<<6),
+    ((long)planet.id<<12)+(ry<<6),
+    ((long)planet.id<< 8)+(rz<<6)
+  )<0 ? MAT_SEA : MAT_LAND;
 
   gsetpos(tx, ty);
   pal = GCOL;

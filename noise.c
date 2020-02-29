@@ -1,5 +1,7 @@
 #include <math.h>
 
+#include "fastmath.h"
+
 #include "noise.h"
 
 const unsigned char permutation[256] =
@@ -23,7 +25,7 @@ const unsigned char permutation[256] =
 };
 #define p(x) permutation[(x&255)]
 
-unsigned int flookup[257] =
+const unsigned int flookup[257] =
 {
   0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 3, 4, 6, 7, 9, 10, 12, 14, 17, 19, 22,
   25, 29, 32, 36, 40, 45, 49, 54, 60, 65, 71, 77, 84, 91, 98, 105, 113, 121,
@@ -48,40 +50,58 @@ unsigned int flookup[257] =
 
 unsigned int fade(unsigned int t)
 {
-  unsigned int t0 = flookup[ t>>8];
-  unsigned int t1 = flookup[(t>>8) + 1];
-  return t0 + ((t&255)*(t1-t0) >> 8);
+  unsigned int t0 = flookup[ t>>4];
+  unsigned int t1 = flookup[(t>>4) + 1];
+  return t0 + ((t&15)*(t1-t0) >> 4);
 }
 
-long lerp(unsigned int t, long a, long b)
+int lerp(unsigned int t, int a, int b)
 {
-  return a + (t*(b-a) >> 12);
+  return a + (smul16x16(t, b-a)>>12);
 }
 
-long grad(unsigned char hash, long x, long y, long z)
+int grad(unsigned char hash, int x, int y, int z)
 {
-  unsigned char h = hash & 15;
-  long u = h<8 ? x : y;
-  long v = h<4 ? y : h==12||h==14 ? x : z;
-  return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
+  switch(hash & 0xF)
+  {
+    case 0x0: return  x + y;
+    case 0x1: return -x + y;
+    case 0x2: return  x - y;
+    case 0x3: return -x - y;
+    case 0x4: return  x + z;
+    case 0x5: return -x + z;
+    case 0x6: return  x - z;
+    case 0x7: return -x - z;
+    case 0x8: return  y + z;
+    case 0x9: return -y + z;
+    case 0xA: return  y - z;
+    case 0xB: return -y - z;
+    case 0xC: return  y + x;
+    case 0xD: return -y + z;
+    case 0xE: return  y - x;
+    case 0xF: return -y - z;
+    default: return 0; // never happens
+  }
 }
 
-#define N 0x10000
-long noise(long x, long y, long z)
+#define N 0x1000
+int noise(long lx, long ly, long lz)
 {
-  unsigned char X = x>>16 & 255;
-  unsigned char Y = y>>16 & 255;
-  unsigned char Z = z>>16 & 255;
-  unsigned char A, B, AA, AB, BA, BB;
-  unsigned int u, v, w;
-  x &= N-1;
-  y &= N-1;
-  z &= N-1;
-  u = fade(x);
-  v = fade(y);
-  w = fade(z);
-  A = p(X  )+Y, AA = p(A)+Z, AB = p(A+1)+Z;
-  B = p(X+1)+Y, BA = p(B)+Z, BB = p(B+1)+Z;
+  unsigned char X = lx>>12 & 255;
+  unsigned char Y = ly>>12 & 255;
+  unsigned char Z = lz>>12 & 255;
+  int x = lx & N-1;
+  int y = ly & N-1;
+  int z = lz & N-1;
+  unsigned int u = fade(x);
+  unsigned int v = fade(y);
+  unsigned int w = fade(z);
+  unsigned char  A = p(X  )+Y;
+  unsigned char AA = p(A  )+Z;
+  unsigned char AB = p(A+1)+Z;
+  unsigned char  B = p(X+1)+Y;
+  unsigned char BA = p(B  )+Z;
+  unsigned char BB = p(B+1)+Z;
 
   return lerp(w, lerp(v, lerp(u, grad(p(AA  ), x  , y  , z   ),
                                  grad(p(BA  ), x-N, y  , z   )),

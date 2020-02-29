@@ -1,1 +1,1 @@
-long noise (long x, long y, long z);
+int noise (long x, long y, long z);
