@@ -1,7 +1,7 @@
-#define TEXT_LEFT    2
-#define TEXT_TOP     1
-#define TEXT_WIDTH  16
-#define TEXT_HEIGHT 13
+#define TEXT_LEFT    1
+#define TEXT_TOP     10
+#define TEXT_WIDTH  38
+#define TEXT_HEIGHT 5
 #define TEXT_RIGHT  (TEXT_LEFT + TEXT_WIDTH  - 1)
 #define TEXT_BOTTOM (TEXT_TOP  + TEXT_HEIGHT - 1)
 

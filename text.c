@@ -5,6 +5,9 @@
 
 #include "text.h"
 
+unsigned char TEXT_PALETTE_TOP;
+unsigned char TEXT_PALETTE_BOT;
+
 void load_text_palettes(Color *bg, Color *fg)
 {
   gaddr(TEXT_PALETTE_TOP * GPAL_SIZE);

@@ -1,98 +1,21 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "util.h"
 #include "gpu.h"
-#include "keys.h"
 
-#include "text.h"
 #include "noise.h"
 #include "fastmath.h"
 
-#define SCROLLX ((int)-2)
-#define SCROLLY ((int)-2)
-const union
-{
-  struct
-  {
-    unsigned char scrollx_l : 8;
-    unsigned char scrolly_l : 8;
-    unsigned char scrollx_u : 2;
-    bool zoomx              : 1;
-    bool                    : 1;
-    unsigned char scrolly_u : 2;
-    bool zoomy              : 1;
-    bool textmode           : 1;
-  } values;
-  unsigned char bytes[3];
-} settings =
-{
-  {
-    .scrollx_l = LOWER(SCROLLX),
-    .scrollx_u = UPPER(SCROLLX) & 0b11,
-    .scrolly_l = LOWER(SCROLLY),
-    .scrolly_u = UPPER(SCROLLY) & 0b11,
-    .zoomx     = true,
-    .zoomy     = true,
-    .textmode  = false
-  }
-};
-void set_graphics_mode()
-{
-  GSET_0 = settings.bytes[0];
-  GSET_1 = settings.bytes[1];
-  GSET_2 = settings.bytes[2];
-}
-
-typedef enum
-{
-  MAT_SPACE,
-  MAT_LAND_DAY,
-  MAT_LAND_NIGHT,
-  MAT_SEA_DAY,
-  MAT_SEA_NIGHT,
-  NUM_MATS
-} Material;
-Color mat_colors[NUM_MATS] =
-{
-  {{.r=0, .g=0, .b=0, .i=0}},
-  {{.r=3, .g=2, .b=1, .i=2}},
-  {{.r=3, .g=2, .b=1, .i=1}},
-  {{.r=0, .g=1, .b=3, .i=2}},
-  {{.r=0, .g=1, .b=3, .i=1}}
-};
-typedef enum
-{
-  PAL_SPACE = MAT_SPACE,
-  PAL_LAND_DAY   = MAT_LAND_DAY,
-  PAL_LAND_NIGHT = MAT_LAND_NIGHT,
-  PAL_SEA_DAY    = MAT_SEA_DAY,
-  PAL_SEA_NIGHT  = MAT_SEA_NIGHT,
-  PAL_FREE  = NUM_MATS,
-  PAL_MIXED,
-  PAL_TEXT_TOP,
-  PAL_TEXT_BOT,
-  NUM_PALS
-} Palette;
-
-void load_materials()
-{
-  unsigned char rgbi;
-  for (Material mat = MAT_SPACE; mat < NUM_MATS; mat++)
-  {
-    rgbi = mat_colors[mat].rgbi;
-    gaddr(mat*GPAL_SIZE);
-    GPAL = rgbi;
-    gaddr(PAL_MIXED*GPAL_SIZE + mat);
-    GPAL = rgbi;
-  }
-}
+#include "material.h"
+#include "planet.h"
 
 typedef struct
 {
-  unsigned int id;
+  unsigned char n;
+  unsigned int seed;
   char name[10];
   unsigned char size;
   unsigned char level;
@@ -101,6 +24,7 @@ typedef struct
   signed char ax;
   signed char ay;
   signed char az;
+  Palette pal;
 } Planet;
 Planet planet;
 
@@ -134,11 +58,11 @@ void generate_name()
 }
 
 #define MAX_SIZE_TILES 9
-#define CENTER_X_TILE 29
-#define CENTER_Y_TILE 15
 #define MAX_SIZE (MAX_SIZE_TILES*GTILE_SIZE)
 #define CENTER_X  (CENTER_X_TILE*GTILE_SIZE)
 #define CENTER_Y  (CENTER_Y_TILE*GTILE_SIZE)
+unsigned char CENTER_X_TILE = 29;
+unsigned char CENTER_Y_TILE = 10;
 void clear_panet_view()
 {
   unsigned char x, y;
@@ -174,9 +98,9 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   else
   {
     sea = noise(
-      ((long)planet.id<<16)+(rx<<s),
-      ((long)planet.id<<12)+(ry<<s),
-      ((long)planet.id<< 8)+(rz<<s)
+      ((long)planet.seed<<16)+(rx<<s),
+      ((long)planet.seed<<12)+(ry<<s),
+      ((long)planet.seed<< 8)+(rz<<s)
     ) < (planet.level << 4);
     day = (
       planet.ax*rx +
@@ -192,26 +116,27 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   pal = GCOL;
   pat = GNAM;
 
-  if (pal == mat)
+  if (pal == planet.pal+mat)
   {
     return;
   }
 
   if (pal == PAL_FREE)
   {
-    GCOL = mat;
+    GCOL = planet.pal+mat;
     return;
   }
 
-  if (pal != PAL_MIXED)
+  if (pal != planet.pal+MAT_MIXED)
   {
-    old = GCOL;
-    GCOL = PAL_MIXED;
+    old = GCOL-planet.pal;
+    GCOL = planet.pal+MAT_MIXED;
     GNAM = pat = free_pattern--;
     gaddr(pat*GPAT_SIZE);
+    old |= old<<4;
     for (i = 0; i < GPAT_SIZE; i++)
     {
-      GPAT_INC = (old << 4) | old;
+      GPAT_INC = old;
     }
   }
 
@@ -296,13 +221,20 @@ void draw_planet()
   unsigned char x   = 0;
   unsigned char y   = r-1;
 
-  mat_colors[MAT_LAND_DAY].rgbi = planet.color1.rgbi|0x03;
-  mat_colors[MAT_SEA_DAY].rgbi = planet.color2.rgbi|0x03;
-  mat_colors[MAT_LAND_NIGHT].rgbi = planet.color1.rgbi&0xFC;
-  mat_colors[MAT_SEA_NIGHT].rgbi = planet.color2.rgbi&0xFC;
-  load_materials();
+  planet.pal = NUM_PALS + (NUM_MATS+1)*planet.n;
+  Color colors[NUM_MATS] = {
+    { .rgbi = 0x00 },
+    { .rgbi = planet.color1.rgbi|0x03 },
+    { .rgbi = planet.color1.rgbi&0xFC },
+    { .rgbi = planet.color2.rgbi|0x03 },
+    { .rgbi = planet.color2.rgbi&0xFC }
+  };
+  load_materials(colors, planet.pal);
 
-  free_pattern = 255;
+  if(planet.n ==0 )
+  {
+    free_pattern = 255;
+  }
 
   while (y >= x)
   {
@@ -323,16 +255,17 @@ void draw_planet()
     f += dfx+1;
   }
 
-  printf("\n%d free\n", free_pattern-127);
+  //printf("\n%d free\n", free_pattern-127);
 
 }
 
-void make_planet(unsigned int seed)
+void make_planet(unsigned char n, unsigned int seed)
 {
   clear_panet_view();
   srand(seed);
 
-  planet.id   = seed;
+planet.n = n;
+  planet.seed = seed;
   planet.size = 1+RANDOM(MAX_SIZE);
   planet.level = RANDOM(100);
   planet.color1.rgbi = 1+RANDOM(254);
@@ -342,49 +275,9 @@ void make_planet(unsigned int seed)
   planet.az = -15+RANDOM(31);
   generate_name();
 
-  printf("Planet %u\n", planet.id);
-  printf("Name: %s\n", planet.name);
-  printf("Size: %u\n", planet.size);
-  printf("Level: %u\n", planet.level);
-  printf("Axis X: %d\n", planet.ax);
-  printf("Axis Y: %d\n", planet.ay);
-  printf("Axis Z: %d\n", planet.az);
+  printf("Planet %u: %s\n", planet.seed, planet.name);
+  printf("Topography: %u / %u\n", planet.size, planet.level);
+  printf("Inclination: %d / %d / %d\n", planet.ax, planet.ay, planet.az);
+
   draw_planet();
-}
-
-
-unsigned char TEXT_PALETTE_TOP = PAL_TEXT_TOP;
-unsigned char TEXT_PALETTE_BOT = PAL_TEXT_BOT;
-Color text_bg  = {{.r=0, .g=0, .b=0, .i=0}};
-Color text_fg  = {{.r=1, .g=3, .b=0, .i=1}};
-
-int main()
-{
-  unsigned char key;
-  unsigned int seed;
-
-  set_graphics_mode();
-  load_text_palettes(&text_bg, &text_fg);
-  load_materials();
-
-  while (true)
-  {
-    printf("\nN: new / Q: quit\n");
-
-    seed = rand();
-    while(!(key = getkey()))
-    {
-      seed++;
-    }
-
-    switch (key)
-    {
-      case KEY_N:
-        putchar('\f');
-        make_planet(seed);
-        break;
-      case KEY_Q:
-        return 0;
-    }
-  }
 }
