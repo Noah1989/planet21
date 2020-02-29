@@ -57,7 +57,9 @@ void generate_name()
   planet.name[i] = 0;
 }
 
-#define MAX_SIZE_TILES 9
+#define MIN_SIZE_TILES 1
+#define MAX_SIZE_TILES 6
+#define MIN_SIZE (MIN_SIZE_TILES*GTILE_SIZE)
 #define MAX_SIZE (MAX_SIZE_TILES*GTILE_SIZE)
 #define CENTER_X  (CENTER_X_TILE*GTILE_SIZE)
 #define CENTER_Y  (CENTER_Y_TILE*GTILE_SIZE)
@@ -221,7 +223,6 @@ void draw_planet()
   unsigned char x   = 0;
   unsigned char y   = r-1;
 
-  planet.pal = NUM_PALS + (NUM_MATS+1)*planet.n;
   Color colors[NUM_MATS] = {
     { .rgbi = 0x00 },
     { .rgbi = planet.color1.rgbi|0x03 },
@@ -229,11 +230,12 @@ void draw_planet()
     { .rgbi = planet.color2.rgbi|0x03 },
     { .rgbi = planet.color2.rgbi&0xFC }
   };
+  planet.pal = NUM_PALS + (NUM_MATS+1)*planet.n;
   load_materials(colors, planet.pal);
 
   if(planet.n ==0 )
   {
-    free_pattern = 255;
+    free_pattern = ' '-1;
   }
 
   while (y >= x)
@@ -266,7 +268,7 @@ void make_planet(unsigned char n, unsigned int seed)
 
 planet.n = n;
   planet.seed = seed;
-  planet.size = 1+RANDOM(MAX_SIZE);
+  planet.size = MIN_SIZE+RANDOM(1+MAX_SIZE-MIN_SIZE);
   planet.level = RANDOM(100);
   planet.color1.rgbi = 1+RANDOM(254);
   planet.color2.rgbi = 1+RANDOM(254);
