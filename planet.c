@@ -49,21 +49,27 @@ void set_graphics_mode()
 typedef enum
 {
   MAT_SPACE,
-  MAT_LAND,
-  MAT_SEA,
+  MAT_LAND_DAY,
+  MAT_LAND_NIGHT,
+  MAT_SEA_DAY,
+  MAT_SEA_NIGHT,
   NUM_MATS
 } Material;
 Color mat_colors[NUM_MATS] =
 {
   {{.r=0, .g=0, .b=0, .i=0}},
   {{.r=3, .g=2, .b=1, .i=2}},
-  {{.r=0, .g=1, .b=3, .i=2}}
+  {{.r=3, .g=2, .b=1, .i=1}},
+  {{.r=0, .g=1, .b=3, .i=2}},
+  {{.r=0, .g=1, .b=3, .i=1}}
 };
 typedef enum
 {
   PAL_SPACE = MAT_SPACE,
-  PAL_LAND  = MAT_LAND,
-  PAL_SEA   = MAT_SEA,
+  PAL_LAND_DAY   = MAT_LAND_DAY,
+  PAL_LAND_NIGHT = MAT_LAND_NIGHT,
+  PAL_SEA_DAY    = MAT_SEA_DAY,
+  PAL_SEA_NIGHT  = MAT_SEA_NIGHT,
   PAL_FREE  = NUM_MATS,
   PAL_MIXED,
   PAL_TEXT_TOP,
@@ -89,8 +95,12 @@ typedef struct
   unsigned int id;
   char name[10];
   unsigned char size;
+  unsigned char level;
   Color color1;
   Color color2;
+  signed char ax;
+  signed char ay;
+  signed char az;
 } Planet;
 Planet planet;
 
@@ -155,12 +165,28 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   unsigned char mat, pal, pat, old;
   unsigned char i;
   unsigned char s = 12-log2(planet.size);
+  bool sea, day;
 
-  mat = rz == -1 ? MAT_SPACE : noise(
-    ((long)planet.id<<16)+(rx<<s),
-    ((long)planet.id<<12)+(ry<<s),
-    ((long)planet.id<< 8)+(rz<<s)
-  )<0 ? MAT_SEA : MAT_LAND;
+  if (rz == -1)
+  {
+    mat = MAT_SPACE;
+  }
+  else
+  {
+    sea = noise(
+      ((long)planet.id<<16)+(rx<<s),
+      ((long)planet.id<<12)+(ry<<s),
+      ((long)planet.id<< 8)+(rz<<s)
+    ) < (planet.level << 4);
+    day = (
+      planet.ax*rx +
+      planet.ay*ry +
+      planet.az*rz
+    ) >= 0;
+    mat = sea
+     ? (day ? MAT_SEA_DAY  : MAT_SEA_NIGHT )
+     : (day ? MAT_LAND_DAY : MAT_LAND_NIGHT);
+  }
 
   gsetpos(tx, ty);
   pal = GCOL;
@@ -270,8 +296,10 @@ void draw_planet()
   unsigned char x   = 0;
   unsigned char y   = r-1;
 
-  mat_colors[MAT_LAND].rgbi = planet.color1.rgbi;
-  mat_colors[MAT_SEA].rgbi = planet.color2.rgbi;
+  mat_colors[MAT_LAND_DAY].rgbi = planet.color1.rgbi|0x03;
+  mat_colors[MAT_SEA_DAY].rgbi = planet.color2.rgbi|0x03;
+  mat_colors[MAT_LAND_NIGHT].rgbi = planet.color1.rgbi&0xFC;
+  mat_colors[MAT_SEA_NIGHT].rgbi = planet.color2.rgbi&0xFC;
   load_materials();
 
   free_pattern = 255;
@@ -306,14 +334,21 @@ void make_planet(unsigned int seed)
 
   planet.id   = seed;
   planet.size = 1+RANDOM(MAX_SIZE);
+  planet.level = RANDOM(100);
   planet.color1.rgbi = 1+RANDOM(254);
   planet.color2.rgbi = 1+RANDOM(254);
+  planet.ax = -15+RANDOM(31);
+  planet.ay = -15+RANDOM(31);
+  planet.az = -15+RANDOM(31);
   generate_name();
 
   printf("Planet %u\n", planet.id);
   printf("Name: %s\n", planet.name);
   printf("Size: %u\n", planet.size);
-
+  printf("Level: %u\n", planet.level);
+  printf("Axis X: %d\n", planet.ax);
+  printf("Axis Y: %d\n", planet.ay);
+  printf("Axis Z: %d\n", planet.az);
   draw_planet();
 }
 
