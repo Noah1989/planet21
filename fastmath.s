@@ -1,5 +1,6 @@
   .module fastmath
   .globl  _smul16x16
+  .globl  _log2
 
   .area   _CODE
 _smul16x16:
@@ -48,4 +49,23 @@ apos:
 bpos:
   ex de, hl
 
+  ret
+
+
+  ; input: hl (16-bit integer unsigned)
+  ; output: a = log2(hl) (rounded down and from -1 to 15) (8-bit integer signed)
+_log2:
+  pop bc
+  pop hl
+  push hl
+  push bc
+
+	ld	a,#16
+	scf
+log2loop:
+	adc	hl,hl
+	dec	a
+	jr	nc,log2loop
+
+  ld l, a
   ret

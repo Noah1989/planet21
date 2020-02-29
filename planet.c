@@ -9,6 +9,7 @@
 
 #include "text.h"
 #include "noise.h"
+#include "fastmath.h"
 
 #define SCROLLX ((int)-2)
 #define SCROLLY ((int)-2)
@@ -79,7 +80,7 @@ void load_materials()
     gaddr(mat*GPAL_SIZE);
     GPAL = rgbi;
     gaddr(PAL_MIXED*GPAL_SIZE + mat);
-    GPAL = rgbi+1;
+    GPAL = rgbi;
   }
 }
 
@@ -88,6 +89,8 @@ typedef struct
   unsigned int id;
   char name[10];
   unsigned char size;
+  Color color1;
+  Color color2;
 } Planet;
 Planet planet;
 
@@ -151,11 +154,12 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   unsigned char py = y%GTILE_SIZE;
   unsigned char mat, pal, pat, old;
   unsigned char i;
+  unsigned char s = 12-log2(planet.size);
 
   mat = rz == -1 ? MAT_SPACE : noise(
-    ((long)planet.id<<16)+(rx<<6),
-    ((long)planet.id<<12)+(ry<<6),
-    ((long)planet.id<< 8)+(rz<<6)
+    ((long)planet.id<<16)+(rx<<s),
+    ((long)planet.id<<12)+(ry<<s),
+    ((long)planet.id<< 8)+(rz<<s)
   )<0 ? MAT_SEA : MAT_LAND;
 
   gsetpos(tx, ty);
@@ -266,6 +270,10 @@ void draw_planet()
   unsigned char x   = 0;
   unsigned char y   = r-1;
 
+  mat_colors[MAT_LAND].rgbi = planet.color1.rgbi;
+  mat_colors[MAT_SEA].rgbi = planet.color2.rgbi;
+  load_materials();
+
   free_pattern = 255;
 
   while (y >= x)
@@ -298,6 +306,8 @@ void make_planet(unsigned int seed)
 
   planet.id   = seed;
   planet.size = 1+RANDOM(MAX_SIZE);
+  planet.color1.rgbi = 1+RANDOM(254);
+  planet.color2.rgbi = 1+RANDOM(254);
   generate_name();
 
   printf("Planet %u\n", planet.id);
