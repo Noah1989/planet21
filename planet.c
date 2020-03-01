@@ -18,7 +18,7 @@ typedef struct
   unsigned int seed;
   char name[10];
   unsigned char size;
-  unsigned char level;
+  signed char level;
   Color color1;
   Color color2;
   signed char ax;
@@ -103,7 +103,7 @@ void setpixel(signed char rx, signed char ry, signed char rz)
       ((long)planet.seed<<16)+(rx<<s),
       ((long)planet.seed<<12)+(ry<<s),
       ((long)planet.seed<< 8)+(rz<<s)
-    ) < (planet.level << 4);
+    ) < (planet.level*16);
     day = (
       planet.ax*rx +
       planet.ay*ry +
@@ -269,7 +269,7 @@ void make_planet(unsigned char n, unsigned int seed)
 planet.n = n;
   planet.seed = seed;
   planet.size = MIN_SIZE+RANDOM(1+MAX_SIZE-MIN_SIZE);
-  planet.level = RANDOM(100);
+  planet.level = -100+RANDOM(201);
   planet.color1.rgbi = 1+RANDOM(254);
   planet.color2.rgbi = 1+RANDOM(254);
   planet.ax = -15+RANDOM(31);
@@ -278,7 +278,7 @@ planet.n = n;
   generate_name();
 
   printf("Planet %u: %s\n", planet.seed, planet.name);
-  printf("Topography: %u / %u\n", planet.size, planet.level);
+  printf("Topography: %d / %d\n", planet.size, planet.level);
   printf("Inclination: %d / %d / %d\n", planet.ax, planet.ay, planet.az);
 
   draw_planet();

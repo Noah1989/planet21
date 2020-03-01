@@ -11,7 +11,7 @@ void load_materials(Color colors[NUM_MATS], Palette base)
   {
     rgbi = colors[mat].rgbi;
     gaddr((base+mat)*GPAL_SIZE);
-    GPAL = rgbi;
+    GPAL = -rgbi;
     gaddr((base+MAT_MIXED)*GPAL_SIZE + mat);
     GPAL = rgbi;
   }
