@@ -9,6 +9,7 @@
 
 #include "material.h"
 #include "planet.h"
+#include "sprite.h"
 
 #define SCROLLX ((int)-2)
 #define SCROLLY ((int)-2)
@@ -48,20 +49,24 @@ void set_graphics_mode()
 Color text_bg = {{.r=0, .g=0, .b=0, .i=0}};
 Color text_fg = {{.r=1, .g=3, .b=0, .i=1}};
 
+unsigned char spx=160, spy=100;
+
 int main()
 {
   unsigned char key;
   unsigned int seed;
 
   set_graphics_mode();
+
   TEXT_PALETTE_TOP = PAL_TEXT_TOP;
   TEXT_PALETTE_BOT = PAL_TEXT_BOT;
   load_text_palettes(&text_bg, &text_fg);
+
+  load_sprite_colors();
+
   putchar('\f');
   while (true)
   {
-    printf("N: new / Q: quit");
-
     seed = rand();
     while(!(key = getkey()))
     {
@@ -70,6 +75,26 @@ int main()
 
     switch (key)
     {
+      case KEY_LEFT:
+        draw_sprite(--spx, spy);
+        break;
+      case KEY_RIGHT:
+        draw_sprite(++spx, spy);
+        break;
+      case KEY_UP:
+        draw_sprite(spx, --spy);
+        break;
+      case KEY_DOWN:
+        draw_sprite(spx, ++spy);
+        break;
+
+      case KEY_S:
+        draw_sprite(spx, spy);
+        break;
+      case KEY_H:
+        hide_sprite();
+        break;
+
       case KEY_N:
         putchar('\f');
         CENTER_X_TILE = 30;
@@ -79,6 +104,7 @@ int main()
         make_planet(1, seed+1);
         printf("\n");
         break;
+
       case KEY_Q:
         return 0;
     }

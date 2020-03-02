@@ -13,12 +13,12 @@ __port __at 0xBD GCOL_INC;
 __port __at 0xBE GPAT_INC;
 __port __at 0xBF GPAL_INC;
 
-#define GPAL_SIZE 16
-#define GPAT_SIZE 32
+#define GPAL_SIZE 16U
+#define GPAT_SIZE 32U
 
-#define GTILE_SIZE 8
-#define GTILE_COLS 128
-#define GTILE_ROWS 64
+#define GTILE_SIZE 8U
+#define GTILE_COLS 128U
+#define GTILE_ROWS 64U
 #define GTILE_COUNT (GTILE_COLS * GTILE_ROWS)
 
 void gaddr(size_t addr);

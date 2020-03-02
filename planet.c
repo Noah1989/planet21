@@ -99,19 +99,24 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   }
   else
   {
-    sea = noise(
+    sea = noise
+    (
       ((long)planet.seed<<16)+(rx<<s),
       ((long)planet.seed<<12)+(ry<<s),
       ((long)planet.seed<< 8)+(rz<<s)
     ) < (planet.level*16);
-    day = (
+    day =
+    (
       planet.ax*rx +
       planet.ay*ry +
       planet.az*rz
     ) >= 0;
-    mat = sea
-     ? (day ? MAT_SEA_DAY  : MAT_SEA_NIGHT )
-     : (day ? MAT_LAND_DAY : MAT_LAND_NIGHT);
+    mat =
+    (
+      sea
+      ? (day ? MAT_SEA_DAY  : MAT_SEA_NIGHT )
+      : (day ? MAT_LAND_DAY : MAT_LAND_NIGHT)
+    );
   }
 
   gsetpos(tx, ty);
@@ -233,9 +238,9 @@ void draw_planet()
   planet.pal = NUM_PALS + (NUM_MATS+1)*planet.n;
   load_materials(colors, planet.pal);
 
-  if(planet.n ==0 )
+  if (planet.n == 0)
   {
-    free_pattern = ' '-1;
+    free_pattern = 255;
   }
 
   while (y >= x)
