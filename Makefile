@@ -7,7 +7,7 @@ planet.ihx: $(objects)
 	sdcc --Werror -mz80 --code-loc 0x8000 --data-loc 0xF000 -o $@ --no-std-crt0 $(objects)
 
 %.rel: %.c *.h
-	sdcc --Werror -mz80 --opt-code-speed  --max-allocs-per-node 200000 -c $<
+	sdcc --Werror -mz80 --opt-code-speed  --max-allocs-per-node 10000 -c $<
 
 %.rel: %.s
 	sdasz80 -o $<
