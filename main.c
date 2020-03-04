@@ -49,7 +49,7 @@ void set_graphics_mode()
 Color text_bg = {{.r=0, .g=0, .b=0, .i=0}};
 Color text_fg = {{.r=1, .g=3, .b=0, .i=1}};
 
-unsigned char spx=160, spy=100;
+int spx=160, spy=100;
 
 int main()
 {

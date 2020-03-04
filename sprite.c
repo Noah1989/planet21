@@ -3,26 +3,26 @@
 
 #include "util.h"
 #include "gpu.h"
+#include "io.h"
 
-unsigned char image[16][16] =
+#include "sprite.h"
+
+unsigned char image[11][9] =
 {
-  {0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-  {1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-  {1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+  { 0,  0,  0,  0,  0,  0,  0,  0,  0},
+  { 0,  0,  0, 15, 15, 15,  0,  0,  0},
+  { 0,  0,  0,  0, 15,  0,  0,  0,  0},
+  { 0,  0,  0,  0, 15,  0,  0,  0,  0},
+  {15,  0,  0,  0, 15,  0,  0,  0, 15},
+  {15, 15, 15, 15, 15, 15, 15, 15, 15},
+  {15,  0,  0,  0, 15,  0,  0,  0, 15},
+  { 0,  0,  0,  0, 15,  0,  0,  0,  0},
+  { 0,  0,  0,  0, 15,  0,  0,  0,  0},
+  { 0,  0,  0, 15, 15, 15,  0,  0,  0},
+  { 0,  0,  0,  0,  0,  0,  0,  0,  0}
 };
+
+unsigned char buf[4][4][8];
 
 typedef struct
 {
@@ -59,11 +59,18 @@ void hide_sprite()
   sprite.visible = false;
 }
 
-void draw_sprite(unsigned char x, unsigned char y)
+void draw_sprite(int x, int y)
 {
-  unsigned char dx, dy, ix, iy, n, px, py, tmp;
+  unsigned char ox, oy;
+  unsigned char op[4];
+  unsigned char n, ix, iy;
+    signed char dx, dy;
+  unsigned char *ptr;
+  unsigned char *pitop;
+  unsigned char *pibot;
 
-  if (sprite.visible) hide_sprite();
+  ox = sprite.tx;
+  oy = sprite.ty;
 
   sprite.tx = x/GTILE_SIZE;
   sprite.ty = y/GTILE_SIZE;
@@ -71,32 +78,63 @@ void draw_sprite(unsigned char x, unsigned char y)
   dy = y%GTILE_SIZE;
 
   gsetpos(sprite.tx, sprite.ty);
-  sprite.origpat[0] = GNAM_INC;
-  sprite.origpat[1] = GNAM_INC;
+  op[0] = GNAM_INC;
+  op[1] = GNAM_INC;
   gsetpos(sprite.tx, sprite.ty+1);
-  sprite.origpat[2] = GNAM_INC;
-  sprite.origpat[3] = GNAM_INC;
+  op[2] = GNAM_INC;
+  op[3] = GNAM_INC;
 
-  for (iy=0; iy<8; iy++)
-  {
-    for (ix=0; ix<16; ix++)
+  for (n = 0; n < 4; n++) {
+    if (op[n] >= sprite.basepat && op[n] < sprite.basepat+4)
     {
-      n = 2*(iy/4) + ix/8;
-      px = ix%8;
-      py = iy%4;
-      gaddr(sprite.origpat[n]*GPAT_SIZE + 8U*py + px);
-      tmp = GPAT;
-      if (image[(2U*iy-dy)%16U][(ix-dx)%16U])
-      {
-        tmp |= 0x0F;
-      }
-      if (image[(2U*iy+1U-dy)%16U][(ix-dx)%16U])
-      {
-        tmp |= 0xF0;
-      }
-      gaddr((sprite.basepat+n)*GPAT_SIZE + 8U*py + px);
-      GPAT = tmp;
+      op[n] = sprite.origpat[op[n]-sprite.basepat];
     }
+  }
+
+  ptr = buf[0][0];
+  for (n = 0; n < 4; n++)
+  {
+    gaddr(op[n]*GPAT_SIZE);
+    ptr = BLKIN(ptr, GPAT_INC, GPAT_SIZE);
+  }
+
+  ptr = &buf[0][dy/2U][dx];
+  pitop = image[~dy&1];
+  pibot = pitop+9;
+  dx = 8-dx;
+  dy = 4-(dy/2);
+  iy = 5;
+  while (1)
+  {
+    ix = 9;
+    while (1)
+    {
+      *ptr |= (*pitop) | ((*pibot)<<4);
+      pitop++;
+      pibot++;
+    if (--ix == 0) break;
+      ptr++;
+      if (--dx == 0) ptr+=32-8;
+    }
+  if (--iy == 0) break;
+    dx+=8;
+    ptr-=32-8;
+    pitop+=9;
+    pibot+=9;
+    if (--dy == 0) ptr+=32;
+  }
+
+  gaddr(sprite.basepat*GPAT_SIZE);
+  BLKOUT(buf[0][0], GPAT_INC, GPAT_SIZE*4);
+
+  if (sprite.visible)
+  {
+    gsetpos(ox, oy);
+    GNAM_INC = sprite.origpat[0];
+    GNAM_INC = sprite.origpat[1];
+    gsetpos(ox, oy+1);
+    GNAM_INC = sprite.origpat[2];
+    GNAM_INC = sprite.origpat[3];
   }
 
   gsetpos(sprite.tx, sprite.ty);
@@ -105,6 +143,10 @@ void draw_sprite(unsigned char x, unsigned char y)
   gsetpos(sprite.tx, sprite.ty+1);
   GNAM_INC = sprite.basepat+2;
   GNAM_INC = sprite.basepat+3;
+
+  for (n = 0; n < 4; n++) {
+    sprite.origpat[n] = op[n];
+  }
 
   sprite.visible = true;
 }
