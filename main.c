@@ -10,6 +10,7 @@
 #include "material.h"
 #include "planet.h"
 #include "sprite.h"
+#include "physics.h"
 
 #define SCROLLX ((int)-2)
 #define SCROLLY ((int)-2)
@@ -49,12 +50,13 @@ void set_graphics_mode()
 Color text_bg = {{.r=0, .g=0, .b=0, .i=0}};
 Color text_fg = {{.r=1, .g=3, .b=0, .i=1}};
 
-int spx=160, spy=100;
-
 int main()
 {
   unsigned char key;
   unsigned int seed;
+  float m1, m2;
+  int spx=160, spy=100;
+  int runx, runy;
 
   set_graphics_mode();
 
@@ -76,20 +78,34 @@ int main()
     switch (key)
     {
       case KEY_LEFT:
-        draw_sprite(--spx, spy);
+        draw_sprite(--spx-4, spy-4);
         break;
       case KEY_RIGHT:
-        draw_sprite(++spx, spy);
+        draw_sprite(++spx-4, spy-4);
         break;
       case KEY_UP:
-        draw_sprite(spx, --spy);
+        draw_sprite(spx-4, --spy-4);
         break;
       case KEY_DOWN:
-        draw_sprite(spx, ++spy);
+        draw_sprite(spx-4, ++spy-4);
+        break;
+
+      case KEY_T:
+        test(spx, spy);
+        break;
+      case KEY_R:
+        runx=spx;
+        runy=spy;
+        while(!getkey())
+        {
+          run(&runx, &runy);
+          draw_sprite(runx-4, runy-4);
+        }
+        draw_sprite(spx-4, spy-4);
         break;
 
       case KEY_S:
-        draw_sprite(spx, spy);
+        draw_sprite(spx-4, spy-4);
         break;
       case KEY_H:
         hide_sprite();
@@ -97,12 +113,15 @@ int main()
 
       case KEY_N:
         putchar('\f');
-        CENTER_X_TILE = 30;
-        make_planet(0, seed);
-        printf("\n");
         CENTER_X_TILE = 10;
-        make_planet(1, seed+1);
+        make_planet(0, seed);
+        m1 = planet.size;
         printf("\n");
+        CENTER_X_TILE = 30;
+        make_planet(1, seed+1);
+        m2 = planet.size;
+        printf("\n");
+        init_physics(m1, m2, 10*8, 30*8, CENTER_Y_TILE*8);
         break;
 
       case KEY_Q:
