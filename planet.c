@@ -65,19 +65,6 @@ void generate_name()
 #define CENTER_Y  (CENTER_Y_TILE*GTILE_SIZE)
 unsigned char CENTER_X_TILE = 29;
 unsigned char CENTER_Y_TILE = 10;
-void clear_panet_view()
-{
-  unsigned char x, y;
-  for (y = CENTER_Y_TILE-MAX_SIZE_TILES; y < CENTER_Y_TILE+MAX_SIZE_TILES; y++)
-  {
-    for (x = CENTER_X_TILE-MAX_SIZE_TILES; x < CENTER_X_TILE+MAX_SIZE_TILES; x++)
-    {
-      gsetpos(x, y);
-      GNAM = ' ';
-      GCOL = PAL_FREE;
-    }
-  }
-}
 
 unsigned char free_pattern;
 void setpixel(signed char rx, signed char ry, signed char rz)
@@ -268,10 +255,9 @@ void draw_planet()
 
 void make_planet(unsigned char n, unsigned int seed)
 {
-  clear_panet_view();
   srand(seed);
 
-planet.n = n;
+  planet.n = n;
   planet.seed = seed;
   planet.size = MIN_SIZE+RANDOM(1+MAX_SIZE-MIN_SIZE);
   planet.level = -100+RANDOM(201);

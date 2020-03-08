@@ -11,9 +11,12 @@ typedef enum
 
 typedef enum
 {
+  PAL_TEXT_0,
+  PAL_TEXT_1,
+  PAL_TEXT_2,
+  PAL_TEXT_3,
+  PAL_TEXT_BORDER,
   PAL_FREE,
-  PAL_TEXT_TOP,
-  PAL_TEXT_BOT,
   NUM_PALS
 } Palette;
 

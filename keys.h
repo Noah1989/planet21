@@ -14,8 +14,8 @@ extern unsigned char getkey();
 #define KEY_F11 0x78
 #define KEY_F12 0x07
 
-#define KEY_SCRLOCK 0x7E
-#define KEY_BACKTICK    0x0E
+#define KEY_SCRLOCK  0x7E
+#define KEY_BACKTICK 0x0E
 
 #define KEY_1 0x16
 #define KEY_2 0x1E

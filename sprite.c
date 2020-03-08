@@ -5,6 +5,8 @@
 #include "gpu.h"
 #include "io.h"
 
+#include "material.h"
+
 #include "sprite.h"
 
 unsigned char image[11][9] =
@@ -41,7 +43,7 @@ Sprite sprite =
 
 void load_sprite_colors()
 {
-  for (size_t i = 0; i < 256; i++)
+  for (size_t i = PAL_FREE; i < 256; i++)
   {
     gaddr(i*GPAL_SIZE + 0x0F);
     GPAL = 0xFF;
