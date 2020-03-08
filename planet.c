@@ -12,20 +12,6 @@
 #include "material.h"
 #include "planet.h"
 
-typedef struct
-{
-  unsigned char n;
-  unsigned int seed;
-  char name[10];
-  unsigned char size;
-  signed char level;
-  Color color1;
-  Color color2;
-  signed char ax;
-  signed char ay;
-  signed char az;
-  Palette pal;
-} Planet;
 Planet planet;
 
 const char *vowels = "aeiouy";
