@@ -38,7 +38,7 @@ typedef struct
 Sprite sprite =
 {
   .visible = false,
-  .basepat = 0
+  .basepat = 65
 };
 
 void load_sprite_colors()
