@@ -20,4 +20,4 @@ typedef enum
   NUM_PALS
 } Palette;
 
-void load_materials(Color colors[NUM_MATS], Palette base);
+void load_materials(Color colors[NUM_MATS], Palette base_pal, Color *player_col);

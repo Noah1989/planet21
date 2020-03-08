@@ -9,6 +9,7 @@
 #include "noise.h"
 #include "fastmath.h"
 
+#include "colors.h"
 #include "material.h"
 #include "planet.h"
 
@@ -104,6 +105,7 @@ void setpixel(signed char rx, signed char ry, signed char rz)
   if (pal == PAL_FREE)
   {
     GCOL = planet.pal+mat;
+    if (RANDOM(3)==0) GNAM = 65+RANDOM(8);
     return;
   }
 
@@ -209,7 +211,7 @@ void draw_planet()
     { .rgbi = planet.color2.rgbi&0xFC }
   };
   planet.pal = NUM_PALS + (NUM_MATS+1)*planet.n;
-  load_materials(colors, planet.pal);
+  load_materials(colors, planet.pal, &player_colors[planet.seed%8]);
 
   if (planet.n == 0)
   {

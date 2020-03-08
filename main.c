@@ -11,6 +11,7 @@
 
 #include "material.h"
 #include "planet.h"
+#include "building.h"
 #include "sprite.h"
 #include "physics.h"
 
@@ -69,7 +70,7 @@ void clear_screen()
 
 int main()
 {
-  unsigned char key;
+  unsigned char key, i;
   unsigned int seed;
   float m1, m2;
   int spx=160, spy=100;
@@ -84,6 +85,7 @@ int main()
   load_text_border_patterns();
   load_font();
   load_sprite_colors();
+  load_building_patterns();
 
   putchar('\f');
   while (true)
@@ -135,6 +137,12 @@ int main()
         load_text_palettes(&player_colors[p]);
         draw_text_border();
         printf("Player %d\nThis\nis a\nTest\n...", p);
+        for (i = 0; i < NUM_BUILDINGS; i++)
+        {
+          gsetpos(1+2*i, 1);
+          GNAM=65+i;
+          GCOL=PAL_TEXT_BORDER;
+        }
         p = ++p%8;
         break;
 

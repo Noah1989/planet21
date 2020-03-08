@@ -3,7 +3,7 @@ all: planet.ihx
 objects = \
 	crt21.rel gpu.rel io.rel text.rel fastmath.rel noise.rel material.rel \
 	planet.rel sprite.rel physics.rel font.rel font_sevenohess.rel colors.rel \
-	main.rel
+	building.rel main.rel
 
 planet.ihx: $(objects)
 	sdcc --Werror -mz80 --code-loc 0x8000 --data-loc 0xF000 -o $@ --no-std-crt0 $(objects)
