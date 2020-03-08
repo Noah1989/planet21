@@ -1,6 +1,7 @@
 typedef enum
 {
-  B_HQ,
+  B_HQ_LAND,
+  B_HQ_SEA,
   B_MINE_LAND,
   B_MINE_SEA,
   B_POWER_SOLAR,
